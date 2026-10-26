@@ -1,0 +1,189 @@
+#root { min-height: 100vh; }
+
+.app-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 30px 0 24px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  color: #a7bf8b;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.04em; }
+h2 { margin-bottom: 5px; font-size: 18px; }
+p { color: #a9b7a7; margin-bottom: 0; font-size: 13px; line-height: 1.5; }
+
+.day-pill {
+  border: 1px solid #3d5940;
+  background: #1d3021;
+  border-radius: 999px;
+  padding: 10px 15px;
+  color: #dcebcf;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  background: #1a281e;
+  border: 1px solid #2e4433;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.stat-card span { color: #a8b7a6; font-size: 12px; }
+.stat-card strong { font-size: 18px; font-weight: 700; }
+
+.game-panel {
+  border: 1px solid #304634;
+  background: #17231a;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.phase-tag {
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #263b29;
+  color: #d9eacb;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.phase-tag.night { background: #3b2b50; color: #e6d7ff; }
+.phase-tag.won { background: #254b34; color: #bff2cb; }
+.phase-tag.lost { background: #542d2b; color: #ffd0c9; }
+
+.canvas-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #476044;
+  background: #719b55;
+  line-height: 0;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  image-rendering: pixelated;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tool-button, .primary-button {
+  min-height: 44px;
+  border: 1px solid #405742;
+  border-radius: 10px;
+  background: #223327;
+  color: #eef4e9;
+  padding: 9px 13px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.tool-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 130px;
+  font-weight: 700;
+}
+.tool-button small { font-size: 10px; color: #a8b7a6; font-weight: 500; }
+.tool-button:hover, .primary-button:hover:not(:disabled) { background: #2d4432; }
+.tool-button.selected { border-color: #d3d987; background: #35472b; box-shadow: inset 0 0 0 1px #d3d987; }
+
+.primary-button {
+  background: #c3d77e;
+  border-color: #c3d77e;
+  color: #20301c;
+  font-weight: 800;
+  margin-left: auto;
+}
+.primary-button:hover:not(:disabled) { background: #d5e69a; }
+.primary-button:disabled { cursor: not-allowed; opacity: .45; }
+
+.message-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  border-radius: 10px;
+  background: #111b14;
+  padding: 12px 14px;
+  color: #d2dfce;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.message-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #c3d77e; }
+
+.end-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #263b29;
+}
+.end-banner strong { font-size: 16px; }
+
+.hint-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #7f9380;
+  font-size: 11px;
+  padding: 16px 4px 0;
+}
+
+@media (max-width: 700px) {
+  .app-shell { width: min(100% - 20px, 1120px); padding-top: 18px; }
+  .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .game-panel { padding: 12px; }
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-button { min-width: 0; }
+  .primary-button { margin-left: 0; }
+  .hint-row { flex-direction: column; }
+}
