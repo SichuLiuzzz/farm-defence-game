@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import "./App.css";
 
-const COLS = 16;
-const ROWS = 10;
+const COLS = 27;
+const ROWS = 28;
 const TILE = 48;
 const CANVAS_WIDTH = COLS * TILE;
 const CANVAS_HEIGHT = ROWS * TILE;
-const PATH_ROW = 4;
+const PATH_COL = Math.floor(COLS / 2);
 const MAX_WAVES = 3;
 
 type Tool = "plant" | "harvest" | "tower";
@@ -31,9 +31,18 @@ type Enemy = {
   speed: number;
 };
 
+type Projectile = {
+  x: number;
+  y: number;
+  targetX: number;
+  targetY: number;
+  progress: number;
+};
+
 type GameState = {
   cells: Cell[];
   enemies: Enemy[];
+  projectiles: Projectile[];
   wood: number;
   grain: number;
   coreHp: number;
@@ -53,6 +62,7 @@ function makeInitialState(): GameState {
       towerCooldown: 0,
     })),
     enemies: [],
+    projectiles: [],
     wood: 10,
     grain: 6,
     coreHp: 10,
@@ -70,11 +80,11 @@ function indexOf(x: number, y: number) {
 }
 
 function isPath(x: number, y: number) {
-  return y === PATH_ROW;
+  return x === PATH_COL;
 }
 
 function isBuildable(x: number, y: number) {
-  return !isPath(x, y) && !(x === 0 && y === PATH_ROW);
+  return !isPath(x, y);
 }
 
 function drawGame(
@@ -153,15 +163,27 @@ function drawGame(
 
   // Farm core at the end of the path.
   ctx.fillStyle = "#e8dfc7";
-  ctx.fillRect(5, PATH_ROW * TILE + 5, TILE - 10, TILE - 10);
+  ctx.fillRect(PATH_COL * TILE + 5, 5, TILE - 10, TILE - 10);
   ctx.fillStyle = "#b64e42";
-  ctx.fillRect(11, PATH_ROW * TILE + 12, TILE - 22, TILE - 17);
+  ctx.fillRect(PATH_COL * TILE + 11, 12, TILE - 22, TILE - 17);
   ctx.fillStyle = "#5e4937";
-  ctx.fillRect(20, PATH_ROW * TILE + 25, 9, 14);
+  ctx.fillRect(PATH_COL * TILE + 20, 25, 9, 14);
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 10px sans-serif";
-  ctx.fillText("CORE", 7, PATH_ROW * TILE + 46);
+  ctx.fillText("CORE", PATH_COL * TILE + 7, 46);
 
+  // Green balls show tower shots traveling to their targets.
+  for (const projectile of game.projectiles) {
+    const cx = (projectile.x + (projectile.targetX - projectile.x) * projectile.progress) * TILE;
+    const cy = (projectile.y + (projectile.targetY - projectile.y) * projectile.progress) * TILE;
+    ctx.fillStyle = "#39e75f";
+    ctx.shadowColor = "#39e75f";
+    ctx.shadowBlur = 9;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
   // Enemies.
   for (const enemy of game.enemies) {
     const cx = enemy.x * TILE + TILE / 2;
@@ -293,13 +315,16 @@ export default function App() {
         }));
 
         let enemies = previous.enemies.map((enemy) => ({ ...enemy }));
+        let projectiles = previous.projectiles
+          .map((projectile) => ({ ...projectile, progress: projectile.progress + 0.5 }))
+          .filter((projectile) => projectile.progress < 1);
         let spawnRemaining = previous.spawnRemaining;
         let spawnTimer = previous.spawnTimer;
         let nextEnemyId = previous.nextEnemyId;
         let coreHp = previous.coreHp;
         let wood = previous.wood;
         let grain = previous.grain;
-        let phase = previous.phase;
+        let phase: Phase = previous.phase;
         let wave = previous.wave;
         let message = previous.message;
 
@@ -309,8 +334,8 @@ export default function App() {
             const hp = 3 + wave;
             enemies.push({
               id: nextEnemyId,
-              x: COLS - 1,
-              y: PATH_ROW,
+              x: PATH_COL,
+              y: ROWS - 1,
               hp,
               maxHp: hp,
               speed: 0.55 + wave * 0.04,
@@ -320,11 +345,11 @@ export default function App() {
             spawnTimer = 1.5;
           }
 
-          enemies = enemies.map((enemy) => ({ ...enemy, x: enemy.x - enemy.speed * 0.25 }));
-          const reachedCore = enemies.filter((enemy) => enemy.x <= 0);
+          enemies = enemies.map((enemy) => ({ ...enemy, y: enemy.y - enemy.speed * 0.25 }));
+          const reachedCore = enemies.filter((enemy) => enemy.y <= 0);
           if (reachedCore.length > 0) {
             coreHp = Math.max(0, coreHp - reachedCore.length * 2);
-            enemies = enemies.filter((enemy) => enemy.x > 0);
+            enemies = enemies.filter((enemy) => enemy.y > 0);
             message = `怪物冲击农场核心！核心生命值：${coreHp}`;
           }
 
@@ -343,7 +368,15 @@ export default function App() {
               }
             });
             if (targetIndex === -1) return cell;
-            enemies[targetIndex].hp -= 1;
+            const target = enemies[targetIndex];
+            projectiles.push({
+              x: tx,
+              y: ty,
+              targetX: target.x + 0.5,
+              targetY: target.y + 0.5,
+              progress: 0,
+            });
+            target.hp -= 1;
             return { ...cell, towerCooldown: 0.75 };
           });
 
@@ -370,6 +403,7 @@ export default function App() {
           ...previous,
           cells,
           enemies,
+          projectiles,
           spawnRemaining,
           spawnTimer,
           nextEnemyId,
