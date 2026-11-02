@@ -2,12 +2,19 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react
 import "./App.css";
 
 const COLS = 27;
-const ROWS = 28;
+const ROWS = 18;
 const TILE = 48;
 const CANVAS_WIDTH = COLS * TILE;
 const CANVAS_HEIGHT = ROWS * TILE;
 const PATH_COL = Math.floor(COLS / 2);
 const MAX_WAVES = 3;
+
+const LOCKED_REGIONS = [
+  { x: 1, y: 5, width: 8, height: 5 },
+  { x: COLS - 9, y: 1, width: 8, height: 6 },
+  { x: 1, y: ROWS - 8, width: 8, height: 5 },
+  { x: COLS - 9, y: ROWS - 8, width: 8, height: 5 },
+];
 
 type Tool = "plant" | "harvest" | "tower";
 type Phase = "day" | "night" | "won" | "lost";
@@ -83,8 +90,14 @@ function isPath(x: number, y: number) {
   return x === PATH_COL;
 }
 
+function isLockedRegion(x: number, y: number) {
+  return LOCKED_REGIONS.some(({ x: left, y: top, width, height }) =>
+    x >= left && x < left + width && y >= top && y < top + height,
+  );
+}
+
 function isBuildable(x: number, y: number) {
-  return !isPath(x, y);
+  return !isPath(x, y) && !isLockedRegion(x, y);
 }
 
 function drawGame(
@@ -105,7 +118,7 @@ function drawGame(
       const px = x * TILE;
       const py = y * TILE;
 
-      ctx.fillStyle = isPath(x, y) ? "#bca47a" : (x + y) % 2 === 0 ? "#79a95d" : "#6d9d53";
+      ctx.fillStyle = isPath(x, y) ? "#bca47a" : isLockedRegion(x, y) ? "#59634a" : (x + y) % 2 === 0 ? "#79a95d" : "#6d9d53";
       ctx.fillRect(px, py, TILE, TILE);
 
       if (isPath(x, y)) {
@@ -116,6 +129,13 @@ function drawGame(
         ctx.fillRect(px + 28, py + 29, 8, 4);
       }
 
+      if (isLockedRegion(x, y)) {
+        ctx.strokeStyle = "rgba(30, 38, 27, 0.28)";
+        ctx.beginPath();
+        ctx.moveTo(px + 7, py + TILE - 5);
+        ctx.lineTo(px + TILE - 5, py + 7);
+        ctx.stroke();
+      }
       if (cell.crop) {
         if (cell.crop.progress < 4) {
           ctx.fillStyle = "#5c3f26";
@@ -161,6 +181,28 @@ function drawGame(
     }
   }
 
+  // Locked plots stay unavailable until the player unlocks land upgrades.
+  for (const region of LOCKED_REGIONS) {
+    const x = region.x * TILE;
+    const y = region.y * TILE;
+    const width = region.width * TILE;
+    const height = region.height * TILE;
+    ctx.fillStyle = "rgba(25, 33, 22, 0.22)";
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = "#d0bd7a";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 2, y + 2, width - 4, height - 4);
+    ctx.fillStyle = "rgba(24, 33, 25, 0.82)";
+    ctx.fillRect(x + width / 2 - 48, y + height / 2 - 13, 96, 26);
+    ctx.fillStyle = "#f0df9c";
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("LOCKED", x + width / 2, y + height / 2);
+  }
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
+  ctx.lineWidth = 1;
   // Farm core at the end of the path.
   ctx.fillStyle = "#e8dfc7";
   ctx.fillRect(PATH_COL * TILE + 5, 5, TILE - 10, TILE - 10);
@@ -246,6 +288,7 @@ export default function App() {
 
     setGame((previous) => {
       if (previous.phase !== "day") return { ...previous, message: "只能在白天操作农场。" };
+      if (isLockedRegion(x, y)) return { ...previous, message: "Locked land: unlock it with an upgrade before farming here." };
       const cell = previous.cells[idx];
       const cells = previous.cells.map((item) => ({ ...item, crop: item.crop ? { ...item.crop } : null }));
 
